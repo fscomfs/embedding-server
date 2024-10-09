@@ -1,10 +1,9 @@
 import os
 import sentence_transformers
 
-def load_transformers(models = os.getenv("MODELS", "sentence-transformers/all-MiniLM-L6-v2")):
+def load_transformers(models = os.getenv("MODELS", "TencentBAC/Conan-embedding-v1")):
     transformers = {}
 
     for model in models.split(','):
-        transformers[model] = sentence_transformers.SentenceTransformer(model)
-
+        transformers['text-embedding-3-large'] = sentence_transformers.SentenceTransformer(model)
     return transformers

@@ -1,3 +1,6 @@
+from typing import Union
+
+import uvicorn
 from fastapi import FastAPI, Response
 from pydantic import BaseModel
 from load_transformers import load_transformers
@@ -7,7 +10,7 @@ transformers = load_transformers()
 app = FastAPI()
 
 class EmbeddingRequest(BaseModel):
-  input: str
+  input: Union[str, list]
   model: str
 
 @app.get("/models")
@@ -27,6 +30,7 @@ async def models():
 
 @app.post("/embeddings")
 async def embedding(req: EmbeddingRequest, res: Response):
+
     if not req.model in transformers:
         res.status_code = 400
 
@@ -34,7 +38,7 @@ async def embedding(req: EmbeddingRequest, res: Response):
             "message": "unknown model: " + req.model
         }
 
-    embeddings = transformers[req.model].encode([req.input])
+    embeddings = transformers[req.model].encode(req.input)
 
     data = []
 
@@ -50,3 +54,6 @@ async def embedding(req: EmbeddingRequest, res: Response):
         "model": req.model,
         "object": "list"
     }
+
+if __name__ == '__main__':
+    uvicorn.run("main:app", host="0.0.0.0", port=8082, reload=True)

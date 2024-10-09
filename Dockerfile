@@ -21,7 +21,8 @@ ENV \
 RUN pip install "poetry~=$POETRY_VERSION"
 
 WORKDIR /src
-
+ARG https_proxy
+ENV https_proxy=${https_proxy}
 COPY pyproject.toml poetry.lock /src/
 RUN poetry export --dev --without-hashes --no-interaction --no-ansi -f requirements.txt -o requirements.txt
 RUN pip install --prefix=/runtime --force-reinstall -r requirements.txt
@@ -31,17 +32,37 @@ COPY . /src
 #
 # output
 #
-FROM base
 
+FROM base as model
 ENV \
-  MODELS="sentence-transformers/all-MiniLM-L6-v2,sentence-transformers/all-mpnet-base-v2,thenlper/gte-base,thenlper/gte-large,thenlper/gte-small"
+  MODELS="thenlper/gte-large"
 
 COPY --from=builder /runtime /usr/local
 
-COPY /app /app
-WORKDIR /app
+COPY /app/install.py /app/install.py
+COPY /app/load_transformers.py /app/load_transformers.py
 
+WORKDIR /app
+ENV https_proxy=''
+ENV HF_ENDPOINT='https://hf-mirror.com'
 RUN python install.py && \
   find /root/.cache/torch/sentence_transformers/ -name onnx -exec rm -rf {} +
+
+
+
+
+FROM base
+
+ENV \
+  MODELS="thenlper/gte-large"
+
+COPY --from=builder /runtime /usr/local
+
+COPY --from=model  /root/.cache/torch  /root/.cache/torch
+
+COPY /app /app
+WORKDIR /app
+ENV https_proxy=''
+ENV HF_ENDPOINT='https://hf-mirror.com'
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]
