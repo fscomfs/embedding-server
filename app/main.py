@@ -9,9 +9,11 @@ transformers = load_transformers()
 
 app = FastAPI()
 
+
 class EmbeddingRequest(BaseModel):
-  input: Union[str, list]
-  model: str
+    input: Union[str, list]
+    model: str
+
 
 @app.get("/models")
 async def models():
@@ -28,9 +30,9 @@ async def models():
         "object": "list"
     }
 
+
 @app.post("/embeddings")
 async def embedding(req: EmbeddingRequest, res: Response):
-
     if not req.model in transformers:
         res.status_code = 400
 
@@ -54,6 +56,12 @@ async def embedding(req: EmbeddingRequest, res: Response):
         "model": req.model,
         "object": "list"
     }
+
+
+@app.get("/health")
+async def health(res: Response):
+    return ""
+
 
 if __name__ == '__main__':
     uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True)
